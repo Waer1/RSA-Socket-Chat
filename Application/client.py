@@ -13,25 +13,26 @@ client_socket.connect((host, port))
 
 print(f"Connected to server {host}:{port}...")
 
+# Prompt the user to enter their name
+user_name = input("Enter your name: ")
+# Send the user's name to the server
+client_socket.send(user_name.encode())
+
 # Define a function to receive messages from the server
 def receive_message():
     while True:
         # Receive the message from the server
         message = client_socket.recv(1024).decode()
         # Print the message to the console
-        print("other: ",message)
+        print(message)
 
 # Start a thread to receive messages from the server
 receive_thread = threading.Thread(target=receive_message)
 receive_thread.start()
 
-
-Username = input("Enter your name: ")
-
 # Send messages to the server
 while True:
     # Prompt the user to enter a message
-    user_input = input(Username+ " :")
-    print("")
+    message = input("")
     # Send the message to the server
-    client_socket.send(user_input.encode())
+    client_socket.send(message.encode())
