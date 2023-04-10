@@ -1,38 +1,72 @@
 import socket
+import base64
+import sys
 import threading
+import json
+from RSA import Encrypt, Decrypt, generate_two_distinct_primes, generate_keypair
+sys.setrecursionlimit(1500)
 
-# Define the host and port to use
-host = "localhost"
+# Create a socket object for the client
+client_socket = socket.socket()
+
+# Get local machine name
+host = socket.gethostname()
+
+# Reserve a port for your service.
 port = 12345
-
-# Create a socket object
-client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
 # Connect to the server
 client_socket.connect((host, port))
 
-print(f"Connected to server {host}:{port}...")
+# Generate the public and private keys for the client
+p , q = generate_two_distinct_primes()
+public_key, private_key = generate_keypair(p, q)
 
-# Prompt the user to enter their name
-user_name = input("Enter your name: ")
-# Send the user's name to the server
-client_socket.send(user_name.encode())
+# Send the public key to the server
+# public_key_str = base64.b64encode(str(public_key).encode('utf-8')).decode('utf-8')
+# client_socket.send(public_key_str.encode('utf-8'))
 
-# Define a function to receive messages from the server
+public_key_str = json.dumps(public_key)
+public_key_str_encoded = base64.b64encode(public_key_str.encode('utf-8'))
+client_socket.send(public_key_str_encoded)
+
+# Receive the other client's public key from the server
+other_public_key_str = client_socket.recv(1024).decode('utf-8')
+other_public_key = eval(base64.b64decode(other_public_key_str.encode('utf-8')).decode('utf-8'))
+print('Received public key of other client:', other_public_key)
+
+# Send the client's name to the server
+name = input('Enter your name: ')
+client_socket.send(name.encode('utf-8'))
+
+# Receive the other client's name from the server
+other_name = client_socket.recv(1024).decode('utf-8')
+print('Other client name:', other_name)
+
+# Start the chat
+print('Starting chat...')
 def receive_message():
     while True:
-        # Receive the message from the server
-        message = client_socket.recv(1024).decode()
-        # Print the message to the console
-        print(message)
+        # Send a message to the other client
+        message = input('> ')
+        # Encrypt message using other_public_key
+        encrypted_message = Encrypt(message, other_public_key)
+        # Send encrypted message to other client
+        encrypted_message_send = base64.b64encode(encrypted_message.to_bytes((encrypted_message.bit_length() + 7) // 8, 'big')).decode('utf-8')
+        # print("the cipher text is : ",encrypted_message_send)
+        client_socket.send(encrypted_message_send.encode('utf-8'))    
 
-# Start a thread to receive messages from the server
+
 receive_thread = threading.Thread(target=receive_message)
 receive_thread.start()
 
-# Send messages to the server
 while True:
-    # Prompt the user to enter a message
-    message = input("")
-    # Send the message to the server
-    client_socket.send(message.encode())
+    # Receive a message from the other client
+    encrypted_message = client_socket.recv(1024).decode('utf-8')
+    # print("the cipher text is : ",encrypted_message)
+    encrypted_int = int.from_bytes(base64.b64decode(encrypted_message.encode('utf-8')), byteorder='big')
+    decrypted_message = Decrypt(encrypted_int, private_key)
+    print(other_name + ': ' + decrypted_message)
+
+# Close the connection
+client_socket.close()
