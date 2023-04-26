@@ -9,5 +9,8 @@ sleep 5
 # Start the first client in a new terminal window
 gnome-terminal --title="Client 1" --command="python client.py"
 
+# Wait for the server to start
+sleep 10
+
 # Start the second client in a new terminal window
 gnome-terminal --title="Client 2" --command="python client.py"

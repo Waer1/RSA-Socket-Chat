@@ -1,0 +1,17 @@
+# Ignore checkpoint files
+.ipynb_checkpoints/
+
+# Ignore notebooks that have been converted to other formats
+*.html
+*.pdf
+
+# Ignore hidden directories
+__pycache__/
+.hidden/
+
+# Ignore temporary files and directories
+*.log
+*.pyc
+*.pyo
+*.swp
+.DS_Store
